@@ -1,0 +1,31 @@
+syntax = "proto2";
+
+// A value for a feature that occurs at a specific point in time
+message Value {
+    // The timestamp in history where this value occurs
+    optional fixed64 timestamp = 1;
+    // The value for feature types KEYWORD, DANISH
+    repeated string stringValue = 2;
+    // The value for feature types FLOAT
+    repeated double doubleValue = 3;
+    // The value for feature types BOOLEAN
+    repeated bool boolValue = 4;
+}
+
+// An update to an entity for a specific feature
+message UpdatedEntity {
+    // The feature which is being updated
+    optional string featureName = 1;
+    // The new value for the feature
+    optional Value value = 2;
+}
+
+// An update to a feature for a specific entity
+message UpdatedFeature {
+    // The ID of the entity being updated
+    optional string entityId = 1;
+    // The timestamp at which this update has been applied in the system (which is not the time at which the value takes effect historically)
+    optional fixed64 timestamp = 2;
+    // The new complete history of the current feature for the given entity
+    repeated Value history = 3;
+} 
