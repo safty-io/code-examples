@@ -70,8 +70,8 @@ Each feature gets its own table named `{entity}_{feature}` (e.g., `dk_address_ad
 
 - `id`: Primary key (auto-increment)
 - `entity_id`: The entity identifier
-- `timestamp`: Event timestamp
-- `value_timestamp`: Value timestamp
+- `lasst_modified`: Event timestamp
+- `effective_from`: Value timestamp
 - `value`: The actual feature value (column type varies by data type)
 - `data_type`: The configured data type
 - `processed_at`: When the record was processed
@@ -106,12 +106,13 @@ The script uses protobuf for efficient data exchange:
 - **API Communication**: Uses `Accept: application/x-protobuf` header
 - **Data Format**: Receives `UpdatedFeature` messages containing:
   - `entityId`: Entity identifier
-  - `timestamp`: Last modified timestamp (in milliseconds)
+  - `lastModified`: Last modified timestamp (in milliseconds since the epoch)
   - `history`: Array of `Value` objects with:
-    - `timestamp`: Value timestamp (in milliseconds)
-    - `stringValue`: Array of string values
+    - `effectiveFrom`: Value timestamp (in milliseconds since the epoch)
+    - `stringValue`: Array of string values, including date strings in ISO format (yyyy-mm-dd)
     - `doubleValue`: Array of double values
     - `boolValue`: Array of boolean values
+    - `instantValue`: Array of timestamp values (as milliseconds since the epoch)
 
 ### Data Type Handling
 
@@ -120,6 +121,7 @@ The script extracts values based on the configured data type:
 - `string` → Uses `stringValue` array
 - `double` → Uses `doubleValue` array
 - `boolean` → Uses `boolValue` array
+- `datetime` → Uses `instantValue` array
 
 ### Generating Protobuf Files
 

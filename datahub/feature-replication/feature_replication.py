@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Feature Replication Script
+Simple Feature Sync Script
 
 This script fetches feature data from an HTTP API using protobuf and saves it to SQLite database.
+It's a simplified Python version of the Scala HttpPostgresSyncJob.
 """
 
 import json
@@ -25,16 +26,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Feature:
-    """Represents a feature to replicate"""
+    """Represents a feature to sync"""
 
     entity: str
     feature: str
     data_type: str = "string"
 
 
-class FeatureReplication:
+class FeatureSync:
     def __init__(self, config_file: str = "config.json"):
-        """Initialize the feature replication with configuration"""
+        """Initialize the feature sync with configuration"""
         self.config = self.load_config(config_file)
         self.db_path = "feature_data.db"
         self.init_database()
@@ -238,17 +239,18 @@ class FeatureReplication:
             for feature in parsed_features:
                 feature_dict = {
                     "id": feature.entityId,
-                    "_lastModified": self.convert_timestamp_to_iso(feature.timestamp),
+                    "_lastModified": self.convert_timestamp_to_iso(feature.lastModified),
                     "history": [],
                 }
 
                 # Process history values
                 for value in feature.history:
                     value_dict = {
-                        "timestamp": self.convert_timestamp_to_iso(value.timestamp),
+                        "effectiveFrom": self.convert_timestamp_to_iso(value.effectiveFrom),
                         "stringValue": list(value.stringValue),
                         "doubleValue": list(value.doubleValue),
                         "boolValue": list(value.boolValue),
+                        "instantvalue": list(value.instantValue)
                     }
                     feature_dict["history"].append(value_dict)
 
@@ -314,7 +316,7 @@ class FeatureReplication:
 
             # Process each value in the history
             for value_obj in event.get("history", []):
-                value_timestamp = value_obj.get("timestamp", "")
+                effective_from = value_obj.get("effectiveFrom", "")
                 
                 # Get values based on data type
                 if data_type == "string":
@@ -323,6 +325,8 @@ class FeatureReplication:
                     values = value_obj.get("doubleValue", [])
                 elif data_type == "boolean":
                     values = value_obj.get("boolValue", [])
+                elif data_type == "date":
+                    value = value_obj.get("instantValue", [])
                 else:
                     values = value_obj.get("stringValue", [])
 
@@ -330,8 +334,8 @@ class FeatureReplication:
                 for value in values:
                     processed_events.append({
                         "entity_id": entity_id,
-                        "timestamp": last_modified,
-                        "value_timestamp": value_timestamp,
+                        "last_modified": last_modified,
+                        "effective_from": effective_from,
                         "value": self.convert_value(value, data_type),
                         "data_type": data_type,
                         "processed_at": datetime.now(timezone.utc).isoformat(),
@@ -351,6 +355,8 @@ class FeatureReplication:
                 if isinstance(value, str):
                     return value.lower() in ["true", "1", "yes", "on"]
                 return bool(value)
+            elif data_type == "date":
+                return self.convert_timestamp_to_iso(value)
             else:  # string, date, or default
                 return str(value)
         except (ValueError, TypeError):
@@ -383,12 +389,12 @@ class FeatureReplication:
             CREATE TABLE IF NOT EXISTS {table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 entity_id TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                value_timestamp TEXT NOT NULL,
+                last_modified TEXT NOT NULL,
+                effective_from TEXT NOT NULL,
                 value {value_column_type},
                 data_type TEXT NOT NULL,
                 processed_at TEXT NOT NULL,
-                UNIQUE(entity_id, value_timestamp)
+                UNIQUE(entity_id, effective_from)
             )
         """)
 
@@ -397,7 +403,7 @@ class FeatureReplication:
             f"CREATE INDEX IF NOT EXISTS idx_{table_name}_entity_id ON {table_name}(entity_id)"
         )
         cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_{table_name}_timestamp ON {table_name}(timestamp)"
+            f"CREATE INDEX IF NOT EXISTS idx_{table_name}_last_modified ON {table_name}(last_modified)"
         )
 
         conn.commit()
@@ -431,13 +437,13 @@ class FeatureReplication:
             cursor.execute(
                 f"""
                 INSERT OR REPLACE INTO {table_name} 
-                (entity_id, timestamp, value_timestamp, value, data_type, processed_at)
+                (entity_id, last_modified, effective_from, value, data_type, processed_at)
                 VALUES (?, ?, ?, ?, ?, ?)
             """,
                 (
                     event.get("entity_id", ""),
-                    event.get("timestamp", ""),
-                    event.get("value_timestamp", ""),
+                    event.get("last_modified", ""),
+                    event.get("effective_from", ""),
                     event.get("value", ""),
                     event.get("data_type", ""),
                     event.get("processed_at", ""),
@@ -465,9 +471,9 @@ class FeatureReplication:
 
         return latest_timestamp
 
-    def replicate_feature(self, feature: Feature) -> bool:
-        """Replicate a single feature"""
-        logger.info(f"Starting replication for {feature.entity}/{feature.feature}")
+    def sync_feature(self, feature: Feature) -> bool:
+        """Sync a single feature"""
+        logger.info(f"Starting sync for {feature.entity}/{feature.feature}")
 
         # Load current offsets
         offsets = self.load_offsets()
@@ -543,20 +549,20 @@ class FeatureReplication:
                     f"Updated offset for {feature.entity}/{feature.feature} to {latest_offset}"
                 )
             else:
-                logger.warning(f"No offset found in batch {batch_count}, stopping replication")
+                logger.warning(f"No offset found in batch {batch_count}, stopping sync")
                 break
 
             # Small delay between batches to be respectful to the API
             time.sleep(0.5)
 
         logger.info(
-            f"Completed replication for {feature.entity}/{feature.feature} - processed {total_processed} events in {batch_count} batches"
+            f"Completed sync for {feature.entity}/{feature.feature} - processed {total_processed} events in {batch_count} batches"
         )
         return True
 
     def run(self):
-        """Run the feature replication for all configured features"""
-        logger.info("Starting feature replication process using protobuf API")
+        """Run the feature sync for all configured features"""
+        logger.info("Starting feature sync process using protobuf API")
 
         # Parse features from config
         features = []
@@ -568,32 +574,32 @@ class FeatureReplication:
             )
             features.append(feature)
 
-        logger.info(f"Found {len(features)} features to replicate")
+        logger.info(f"Found {len(features)} features to sync")
 
         # Process each feature
         success_count = 0
         for feature in features:
             try:
-                if self.replicate_feature(feature):
+                if self.sync_feature(feature):
                     success_count += 1
                 else:
-                    logger.error(f"Failed to replicate {feature.entity}/{feature.feature}")
+                    logger.error(f"Failed to sync {feature.entity}/{feature.feature}")
             except Exception as e:
-                logger.error(f"Error replicating {feature.entity}/{feature.feature}: {e}")
+                logger.error(f"Error syncing {feature.entity}/{feature.feature}: {e}")
 
             # Small delay between features to be respectful to the API
             time.sleep(1)
 
         logger.info(
-            f"Replication completed. Successfully processed {success_count}/{len(features)} features"
+            f"Sync completed. Successfully processed {success_count}/{len(features)} features"
         )
         logger.info(f"Data saved to SQLite database: {self.db_path}")
 
 
 def main():
     """Main entry point"""
-    replication = FeatureReplication()
-    replication.run()
+    sync = FeatureSync()
+    sync.run()
 
 
 if __name__ == "__main__":

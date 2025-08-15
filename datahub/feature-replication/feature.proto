@@ -1,15 +1,22 @@
 syntax = "proto2";
 
+package com.predicti.jobs.batch.feature_sync.generated;
+
+option java_package = "com.predicti.jobs.batch.feature_sync.generated";
+option java_outer_classname = "FeatureProto";
+
 // A value for a feature that occurs at a specific point in time
 message Value {
-    // The timestamp in history where this value occurs
-    optional fixed64 timestamp = 1;
-    // The value for feature types KEYWORD, DANISH
+    // The timestamp in history where this value occurs (as milliseconds since the epoch)
+    optional sfixed64 effectiveFrom = 1;
+    // The value for feature types KEYWORD, DANISH, LOCALDATE (in ISO format, yyyy-mm-dd)
     repeated string stringValue = 2;
     // The value for feature types FLOAT
     repeated double doubleValue = 3;
     // The value for feature types BOOLEAN
     repeated bool boolValue = 4;
+    // The value for feature types INSTANT and LOCALDATETIME (as milliseconds since the epoch)
+    repeated sfixed64 instantValue = 5;
 }
 
 // An update to an entity for a specific feature
@@ -25,7 +32,7 @@ message UpdatedFeature {
     // The ID of the entity being updated
     optional string entityId = 1;
     // The timestamp at which this update has been applied in the system (which is not the time at which the value takes effect historically)
-    optional fixed64 timestamp = 2;
+    optional fixed64 lastModified = 2;
     // The new complete history of the current feature for the given entity
     repeated Value history = 3;
-} 
+}
