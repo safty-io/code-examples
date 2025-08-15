@@ -1,0 +1,135 @@
+{
+  "api": {
+    "base_url": "https://api.predicti.com/datahub/v1",
+    "api_key": "82034677cbc70bd3fbdc85103aecb0de2b4f71101084553f1f19914ee9335b69"
+  },
+  "features": [
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_rooms_count",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_floor",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_rentalStatusCode",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_streetCode",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_door",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_houseNumber",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_city",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_areaForResidence",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_additionalCity",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_residenceTypeCode",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_bathrooms_count",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_toilets_count",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_postalCode",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainUnit_totalArea",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "address_municipalityCode",
+      "data_type": "string"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainBuilding_constructionYear",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "mainBuilding_builtUpArea",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_birthDate_youngest",
+      "data_type": "date"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_birthDate_oldest",
+      "data_type": "date"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_count",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_ownedPrivateHomes_count",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_ownedVacationHomes_count",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_propertyTradePurchasePrice_latest",
+      "data_type": "double"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_propertyTradeClosingDate_latest",
+      "data_type": "date"
+    },
+    {
+      "entity": "dk-address",
+      "feature": "residents_propertyTransferDate_latest",
+      "data_type": "date"
+    }
+  ],
+  "batch_size": 1000,
+  "request_timeout": 30
+} 
